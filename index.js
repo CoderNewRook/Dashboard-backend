@@ -89,7 +89,7 @@ app.post("/login", async (req, res) => {
 
 app.get("/photo/:username/:id", async (req, res) => {
     console.log(req.params);
-    const sqlGetPhotos = "SELECT photo FROM userdata WHERE username = ? AND id = ?"
+    const sqlGetPhotos = "SELECT photo FROM userphotos WHERE username = ? AND id = ?"
     db.query(sqlGetPhotos, [req.params.username, req.params.id], (error, result) => {
         if(error) {
             console.log(error); 
@@ -115,6 +115,7 @@ app.get("/photos/:username", async (req, res) => {
 
 app.post("/photo/:username", upload.single("photo"), async (req, res) => {
     console.log(req.body);
+    console.log(req.file);
     const sqlCheck = "SELECT username FROM userphotos WHERE username = ?";
     const checkQuery = db.query(sqlCheck, [req.params.username], (error, result) => {
         if(error) {
@@ -138,8 +139,8 @@ app.post("/photo/:username", upload.single("photo"), async (req, res) => {
 
 app.post("/task/:username", (req, res) => {
     console.log(req.body);
-    const sql = "INSERT INTO usertasks (username, task, completed) VALUES (?,?,?)";
-    const query = db.query(sql, [req.params.username, req.body.task, req.body.completed], (error, result) => {
+    const sql = "INSERT INTO usertasks (username, task, completed, id) VALUES (?,?,?,?)";
+    const query = db.query(sql, [req.params.username, req.body.task, req.body.completed, req.body.id], (error, result) => {
         if(error) {
             console.log(error); 
             res.status(400).send("Error when adding task");
@@ -151,30 +152,57 @@ app.post("/task/:username", (req, res) => {
 })
 
 app.put("/tasks/:username", async (req, res) => {
-    const sqlDelete = "DELETE FROM usertasks WHERE username = ?";
-    const deleteQuery = db.query(sqlDelete, [req.params.username], (error, result) => {
-        if(error) {
-            console.log(error); 
-            res.status(400).send("Error when updating tasks");
-            return;
-            // return false;
-        };
-        console.log(req.body);
-        console.log(req.body.tasks);
-        for(let task of req.body.tasks) {
-            const sql = "INSERT INTO usertasks (username, task, completed) VALUES (?,?,?)";
-            const query = db.query(sql, [req.params.username, task.task, task.completed], (error, result) => {
-                if(error) {
-                    console.log(error); 
-                    res.status(400).send("Error when adding task");
-                    return;
-                };
-                console.log(result);
-            })
-        }
-        res.status(200).send("Tasks updated");
-    })
+    // const sqlDelete = "DELETE FROM usertasks WHERE username = ?";
+    // const deleteQuery = db.query(sqlDelete, [req.params.username], (error, result) => {
+    //     if(error) {
+    //         console.log(error); 
+    //         res.status(400).send("Error when updating tasks");
+    //         return;
+    //         // return false;
+    //     };
+    //     console.log(req.body);
+    //     console.log(req.body.tasks);
+    //     for(let task of req.body.tasks) {
+    //         const sql = "INSERT INTO usertasks (username, task, completed) VALUES (?,?,?)";
+    //         const query = db.query(sql, [req.params.username, task.task, task.completed], (error, result) => {
+    //             if(error) {
+    //                 console.log(error); 
+    //                 res.status(400).send("Error when adding task");
+    //                 return;
+    //             };
+    //             console.log(result);
+    //         })
+    //     }
+    //     res.status(200).send("Tasks updated");
+    // })
+    for(let task of req.body.tasks) {
+        const sql = "UPDATE usertasks SET task = ?, completed = ? WHERE username = ? AND id = ?";
+        const query = db.query(sql, [task.task, task.completed, req.params.username, task.id], (error, result) => {
+            if(error) {
+                console.log(error); 
+                res.status(400).send("Error when adding task");
+                return;
+            };
+            console.log(result);
+        })
+    }
+    res.status(200).send("Tasks updated");
 })
+
+// app.put("/photo/:username", async (req, res) => {
+//     for(let task of req.body.tasks) {
+//         const sql = "UPDATE usertasks SET task = ?, completed = ? WHERE username = ? AND id = ?";
+//         const query = db.query(sql, [task.task, task.completed, req.params.username, task.id], (error, result) => {
+//             if(error) {
+//                 console.log(error); 
+//                 res.status(400).send("Error when adding task");
+//                 return;
+//             };
+//             console.log(result);
+//         })
+//     }
+//     res.status(200).send("Tasks updated");
+// })
 
 app.get("/tasks/:username", async (req, res) => {
     const sqlGetTasks = "SELECT task, completed FROM usertasks WHERE username = ?"
@@ -191,7 +219,7 @@ app.get("/tasks/:username", async (req, res) => {
 })
 
 app.post("/register", upload.single("picture"), async (req, res) => {
-    const userData = {...req.body, picture: req.file.buffer};
+    const userData = {...req.body, picture: req.file ? req.file.buffer : null};
     const sqlCheck = "SELECT username FROM userdata WHERE username = ?";
     const checkQuery = db.query(sqlCheck, [userData.username], (error, result) => {
         if(error) {
