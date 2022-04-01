@@ -3,28 +3,18 @@ const mysql = require("mysql2");
 const app = express();
 const port = 3000;
 const path = require("path");
-// const https = require("https");
 const nodefetch = require("node-fetch");
-// const async = require("async");
-// const { XMLParser } = require("fast-xml-parser");
 const {parse} = require("csv-parse");
 const bodyParser = require("body-parser");
 const multer = require("multer");
 const upload = multer();
-// https.get("https://therapy-box.co.uk/hackathon/clothing-api.php?username=swapnil", (res: Response) => {
-//     console.log(res.headers);
-//     // res.on("data", data => console.log(data));
-// })
 
-// let db = null;
-// async function connectToDatabase() {
 db = mysql.createConnection({
     host: "localhost",
     user: "root",
     password: "qfpjASDFQSEF1234zpzp",
     database: "dashboarduserdata"
 })
-// }
 
 db.connect(err => {
     if(err){
@@ -34,14 +24,9 @@ db.connect(err => {
     console.log("Connected to database");
 })
 
-
-
-// connectToDatabase();
-
 app.use(express.static(path.join(__dirname, "client/build")));
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
-// app.use(bodyParser.raw());
 
 const createNewUser = async (userData) => {
     // Check if user already exists
@@ -54,9 +39,7 @@ const createNewUser = async (userData) => {
         console.log(result);
         if(result.length > 0) return false;
     });
-    // console.log(userData);
     const sql = "INSERT INTO userdata VALUES (?,?,?,?)";
-    // const sql = "INSERT INTO userdata VALUES (?,?,?)";
     const query = db.query(sql, Object.values(userData), (error, result) => {
         if(error) {
             console.log(error); 
@@ -67,57 +50,26 @@ const createNewUser = async (userData) => {
     });
 }
 
-// createNewUser({username: "userrrrname",password: "pass",email: "mail@ee",picture: null});
-
-const getUserData = (username) => {
-    
-}
-
-function authenticate(username, password) {
-    const sql = "SELECT password FROM userdata WHERE username = ?";
-    const query = db.query(sql, [username], (error, result) => {
-        if(error) {
-            console.log(error); 
-            return;
-        };
-        console.log(result);
-        if(result.length === 0) console.log("failed");
-        else if(password === result[0]["password"]) console.log("successs");
-        else console.log("failed");
-    });
-}
-
-// authenticate("myusersname", "thepassword");
-// authenticate("userrrrname", "passwd");
-
 app.get("/picture/:username", async (req, res) => {
     const sqlGetPhotos = "SELECT picture FROM userdata WHERE username = ?"
     db.query(sqlGetPhotos, [req.params.username], (error, result) => {
         if(error) {
             console.log(error); 
-            // dataRetrieved();
             return;
         };
-        // userData["photos"] = result.map(item => item["photo"]);
-        // console.log("photos retrieved");
-        // res.send(JSON.stringify(result[0].picture));
         res.send(result[0].picture);
-        // dataRetrieved();
     });
-    // console.log("getting photos");
 })
 
 app.post("/login", async (req, res) => {
     const data = req.body;
     const {username, password} = data;
-    // console.log(req);
     const sql = "SELECT password FROM userdata WHERE username = ?";
     const query = db.query(sql, [username], (error, result) => {
         if(error) {
             console.log(error); 
             return;
         };
-        // console.log(result);
         let correctPassword = false;
         if(result.length === 0) {
             console.log("No such username");
@@ -141,14 +93,9 @@ app.get("/photo/:username/:id", async (req, res) => {
     db.query(sqlGetPhotos, [req.params.username, req.params.id], (error, result) => {
         if(error) {
             console.log(error); 
-            // dataRetrieved();
             return;
         };
-        // userData["photos"] = result.map(item => item["photo"]);
-        // console.log("photos retrieved");
-        // res.send(JSON.stringify(result[0].picture));
         res.send(result[0].photo);
-        // dataRetrieved();
     });
 })
 
@@ -160,10 +107,8 @@ app.get("/photos/:username", async (req, res) => {
             dataRetrieved();
             return;
         };
-        // userData["photos"] = result.map(item => item["photo"]);
         console.log("photos retrieved");
         res.send(JSON.stringify({numOfPhotos: result.length}));
-        // dataRetrieved();
     });
     console.log("getting photos");
 })
@@ -176,23 +121,17 @@ app.post("/photo/:username", upload.single("photo"), async (req, res) => {
             console.log(error);
             res.status(400).send("Error when adding photo");
             return;
-            // return false;
         };
-        // console.log(result);
-        // if(result.length > 0) return false;
         const numOfPhotos = result.length;
         const sql = "INSERT INTO userphotos (username, photo, id) VALUES (?,?,?)";
-        // const sql = "INSERT INTO userdata VALUES (?,?,?)";
         const query = db.query(sql, [req.params.username, req.file.buffer, numOfPhotos], (error, result) => {
             if(error) {
                 console.log(error);
                 res.status(400).send("Error when adding photo");
                 return;
-                // return false;
             };
             console.log(result);
             res.status(200).send("Photo added");
-            // return true;
         })
     });
 })
@@ -200,23 +139,19 @@ app.post("/photo/:username", upload.single("photo"), async (req, res) => {
 app.post("/task/:username", (req, res) => {
     console.log(req.body);
     const sql = "INSERT INTO usertasks (username, task, completed) VALUES (?,?,?)";
-    // const sql = "INSERT INTO userdata VALUES (?,?,?)";
     const query = db.query(sql, [req.params.username, req.body.task, req.body.completed], (error, result) => {
         if(error) {
             console.log(error); 
             res.status(400).send("Error when adding task");
             return;
-            // return false;
         };
         console.log(result);
         res.status(200).send("Task added");
-        // return true;
     })
 })
 
 app.put("/tasks/:username", async (req, res) => {
     const sqlDelete = "DELETE FROM usertasks WHERE username = ?";
-    // const sql = "INSERT INTO userdata VALUES (?,?,?)";
     const deleteQuery = db.query(sqlDelete, [req.params.username], (error, result) => {
         if(error) {
             console.log(error); 
@@ -228,21 +163,16 @@ app.put("/tasks/:username", async (req, res) => {
         console.log(req.body.tasks);
         for(let task of req.body.tasks) {
             const sql = "INSERT INTO usertasks (username, task, completed) VALUES (?,?,?)";
-            // const sql = "INSERT INTO userdata VALUES (?,?,?)";
             const query = db.query(sql, [req.params.username, task.task, task.completed], (error, result) => {
                 if(error) {
                     console.log(error); 
                     res.status(400).send("Error when adding task");
                     return;
-                    // return false;
                 };
                 console.log(result);
-                // res.status(200).send("Task added");
-                // return true;
             })
         }
         res.status(200).send("Tasks updated");
-        // return true;
     })
 })
 
@@ -254,24 +184,13 @@ app.get("/tasks/:username", async (req, res) => {
             dataRetrieved();
             return;
         };
-        // userData["tasks"] = result3.map(item => ({task: item["task"], completed: item["completed"]}));
         console.log("tasks retrieved");
         res.send(JSON.stringify(result));
-        // dataRetrieved();
     });
     console.log("getting tasks");
 })
 
 app.post("/register", upload.single("picture"), async (req, res) => {
-    // const data = req.body;
-    // const profilePicture = new File(data.pictureData);
-    // console.log(profilePicture);
-    // const dataString = streamToString(data)
-    // console.log(data);
-    // console.log(req);
-    // console.log(req.file);
-    // console.log(req.body);
-    // return;
     const userData = {...req.body, picture: req.file.buffer};
     const sqlCheck = "SELECT username FROM userdata WHERE username = ?";
     const checkQuery = db.query(sqlCheck, [userData.username], (error, result) => {
@@ -283,9 +202,7 @@ app.post("/register", upload.single("picture"), async (req, res) => {
         console.log(result);
         if(result.length > 0) res.status(400).send({message: "Username already taken"});
     });
-    // console.log(userData);
     const sql = "INSERT INTO userdata VALUES (?,?,?,?)";
-    // const sql = "INSERT INTO userdata VALUES (?,?,?)";
     const query = db.query(sql, Object.values(userData), (error, result) => {
         if(error) {
             console.log(error); 
@@ -294,16 +211,7 @@ app.post("/register", upload.single("picture"), async (req, res) => {
         };
         console.log(result);
         res.status(200).send({message: "Account created"});
-        // return true;
     });
-    // const success = await createNewUser({...req.body, picture: req.file.buffer});
-    // console.log(success);
-    // if(success){
-    //     res.status(200).send({message: "Account created"});
-    // }
-    // else{
-    //     res.status(400).send({message: "Username already taken"});
-    // }
 })
 
 
@@ -323,7 +231,6 @@ app.get("/clothes", async (req, res) => {
 
 app.get("/sport", async (req, res) => {
     const response = await nodefetch("http://www.football-data.co.uk/mmz4281/1718/I1.csv");
-    // const data = await response.json();
 
     const records = [];
     // Initialize the parser
@@ -350,7 +257,6 @@ app.get("/sport", async (req, res) => {
 app.get("/weather", async (req, res) => {
     // const response = await nodefetch("https://api.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=d0a10211ea3d36b0a6423a104782130e");
     const data = await getWeather();
-    // console.log(data);
     res.send(JSON.stringify(data));
 })
 
@@ -380,7 +286,6 @@ async function getWeather() {
     // { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 });
     const response = await nodefetch(`https://api.openweathermap.org/data/2.5/weather?lat=${coords.lat}&lon=${coords.lon}&appid=d0a10211ea3d36b0a6423a104782130e&units=metric`);
     const data = await response.json();
-    // console.log(data);
     const temperature = data.main.temp;
     const location = data.name;
     const weather = weatherToBasicWeather(data.weather.main);
@@ -391,7 +296,6 @@ async function getWeather() {
 async function sportTest(){
     const response = await nodefetch("http://www.football-data.co.uk/mmz4281/1718/I1.csv");
     const data = await streamToString(response.body);
-    // console.log(response.body);
     console.log(data);
     // parse()
     parse(data, {relax_column_count_less: true, relaxQuotes: true}, function(err, records){
@@ -399,19 +303,9 @@ async function sportTest(){
         console.log(records);
     });
 }
-// getWeather();
-// sportTest();
 
 async function streamToString(stream){
     const chunks = [];
-    // return new Promise((resolve, reject) => {
-    //     stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
-    //     stream.on("error", error => reject(error));
-    //     stream.on("end", resolve(Buffer.concat(chunks).toString("utf8")));
-    // })
-    
-    // stream.on("data", chunk => chunks.push(chunk));
-    // stream.on("end", () => chunks);
     for await (const chunk of stream) {
         chunks.push(Buffer.from(chunk));
     }
@@ -423,14 +317,6 @@ async function streamToString(stream){
 
 async function streamToBuffer(stream){
     const chunks = [];
-    // return new Promise((resolve, reject) => {
-    //     stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
-    //     stream.on("error", error => reject(error));
-    //     stream.on("end", resolve(Buffer.concat(chunks).toString("utf8")));
-    // })
-    
-    // stream.on("data", chunk => chunks.push(chunk));
-    // stream.on("end", () => chunks);
     for await (const chunk of stream) {
         chunks.push(Buffer.from(chunk));
     }
@@ -451,10 +337,7 @@ app.get("/latestNews", async (req, res) => {
 async function getNewsItems() {
     const response = await nodefetch("http://feeds.bbci.co.uk/news/rss.xml");
     const data = await streamToString(response.body);
-    // console.log(data);
-    // const newsItems = data.match(/<item>[^]+?<\/item>/g);
     const newsItems = data.match(/(?<=<item>)[^]+?(?=<\/item>)/g);
-    // console.log(newsItems);
     return newsItems;
 }
 
@@ -478,19 +361,11 @@ async function getLatestNews() {
 }
 
 async function testfunc() {
-    // console.log(getNewsItems());
     const firstNews = await getFirstNews();
     console.log(firstNews);
     const latestNews = await getLatestNews();
     console.log(latestNews);
-    // console.log(getFirstNews());
-    // console.log(getLatestNews());
 }
-// console.log(getNewsItems());
-// console.log(getFirstNews());
-// console.log(getLatestNews());
-
-// testfunc();
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
