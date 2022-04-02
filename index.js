@@ -8,6 +8,9 @@ const {parse} = require("csv-parse");
 const bodyParser = require("body-parser");
 const multer = require("multer");
 const upload = multer();
+// const sportsCSV = require("./I1.csv");
+// import sports from "./I1.csv";
+const fs = require("fs/promises");
 
 db = mysql.createConnection({
     host: "localhost",
@@ -258,12 +261,90 @@ app.get("/clothes", async (req, res) => {
 })
 
 app.get("/sport", async (req, res) => {
-    const response = await nodefetch("http://www.football-data.co.uk/mmz4281/1718/I1.csv");
+    const csvBuffer = await fs.readFile("./I1.csv");
+    const records = [];
+    const parser = parse(csvBuffer, {
+        delimiter: ':'
+    });
+    parser.on('readable', function(){
+    let record;
+    while ((record = parser.read()) !== null) {
+        records.push(record);
+    }
+    });
+    parser.on('error', function(err){
+    console.error(err.message);
+    });
+    parser.on('end', function(){
+        const teamsBeaten = {};
+        const lines = records.map(line => line[0]).slice(1).filter(line => line !== "");
+        const data = lines.map(line => {
+            const lineValues = line.split(",");
+            const homeTeam = lineValues[2];
+            const awayTeam = lineValues[3];
+            const winnerCode = lineValues[6];
+            let winner = undefined;
+            let loser = undefined;
+            if(winnerCode === "H") {
+                winner = homeTeam;
+                loser = awayTeam;
+            }
+            else if(winnerCode === "A") {
+                winner = awayTeam;
+                loser = homeTeam;
+            }
+            if(winner) {
+                if(!teamsBeaten.hasOwnProperty(winner)) teamsBeaten[winner] = [];
+                teamsBeaten[winner].push(loser);
+            }
+        })
+        // Remove duplicate beaten teams
+        for(const [team, beaten] of Object.entries(teamsBeaten)) {
+            teamsBeaten[team] = [...new Set(beaten)]
+        }
+        // console.log(teamsBeaten);
+        res.send(JSON.stringify(teamsBeaten));
+    });
+})
 
+async function sportTest(){
+    // const response = await nodefetch("http://www.football-data.co.uk/mmz4281/1718/I1.csv");
+    // const data = await streamToString(response.body);
+    // console.log(data);
+    // parse()
+    // parse(data, {relax_column_count_less: true, relaxQuotes: true}, function(err, records){
+    //     if(err) console.log(err.message);
+    //     console.log(records);
+    // });
+    // const records = [];
+    // // Initialize the parser
+    // const parser = parse(sportsCSV, {
+    //     delimiter: ','
+    // });
+    // // Use the readable stream api to consume records
+    // parser.on('readable', function(){
+    // let record;
+    // while ((record = parser.read()) !== null) {
+    //     records.push(record);
+    // }
+    // });
+    // // Catch any error
+    // parser.on('error', function(err){
+    // console.error(err.message);
+    // });
+    // // Test that the parsed records matched the expected records
+    // parser.on('end', function(){
+    //     console.log(records);
+    //     // res.send(JSON.stringify(records));
+    // });
+    const csvBuffer = await fs.readFile("./I1.csv");
+    // const csvString = csvBuffer.toString("utf8");
+    // console.log(csvString);
+    // const csvFile = parse(csvBuffer);
     const records = [];
     // Initialize the parser
-    const parser = parse({
-    delimiter: ':'
+    const parser = parse(csvBuffer, {
+        delimiter: ':'
     });
     // Use the readable stream api to consume records
     parser.on('readable', function(){
@@ -278,9 +359,42 @@ app.get("/sport", async (req, res) => {
     });
     // Test that the parsed records matched the expected records
     parser.on('end', function(){
-        res.send(JSON.stringify(records));
+        const teamsBeaten = {};
+        const lines = records.map(line => line[0]).slice(1).filter(line => line !== "");
+        const data = lines.map(line => {
+            const lineValues = line.split(",");
+            const homeTeam = lineValues[2];
+            const awayTeam = lineValues[3];
+            const winnerCode = lineValues[6];
+            let winner = undefined;
+            let loser = undefined;
+            if(winnerCode === "H") {
+                winner = homeTeam;
+                loser = awayTeam;
+            }
+            else if(winnerCode === "A") {
+                winner = awayTeam;
+                loser = homeTeam;
+            }
+            if(winner) {
+                if(!teamsBeaten.hasOwnProperty(winner)) teamsBeaten[winner] = [];
+                teamsBeaten[winner].push(loser);
+            }
+        })
+        // Remove duplicate beaten teams
+        for(const [team, beaten] of Object.entries(teamsBeaten)) {
+            teamsBeaten[team] = [...new Set(beaten)]
+        }
+        console.log(teamsBeaten);
+        // res.send(JSON.stringify(teamsBeaten));
     });
-})
+    // console.log(csvFile);
+    // for(let line of csvFile) {
+    //     console.log(line);
+    // }
+}
+
+// sportTest();
 
 app.get("/weather", async (req, res) => {
     // const response = await nodefetch("https://api.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=d0a10211ea3d36b0a6423a104782130e");
@@ -319,17 +433,6 @@ async function getWeather() {
     const weather = weatherToBasicWeather(data.weather.main);
     console.log({weather, temperature, location});
     return {weather, temperature, location};
-}
-
-async function sportTest(){
-    const response = await nodefetch("http://www.football-data.co.uk/mmz4281/1718/I1.csv");
-    const data = await streamToString(response.body);
-    console.log(data);
-    // parse()
-    parse(data, {relax_column_count_less: true, relaxQuotes: true}, function(err, records){
-        if(err) console.log(err.message);
-        console.log(records);
-    });
 }
 
 async function streamToString(stream){
