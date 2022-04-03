@@ -144,7 +144,7 @@ app.put("/photo/:username", upload.single("photo"), (req, res) => {
     console.log(req.body);
     console.log(req.file);
     const sql = "UPDATE userphotos SET photo = ? WHERE username = ? AND id = ?";
-    const query = db.query(sql, [req.file, req.params.username, req.query.id], (error, result) => {
+    const query = db.query(sql, [req.file.buffer, req.params.username, req.query.id], (error, result) => {
         if(error) {
             console.log(error);
             res.status(400).send("Error when updating photo");
@@ -156,8 +156,8 @@ app.put("/photo/:username", upload.single("photo"), (req, res) => {
 })
 
 app.delete("/photo/:username", (req, res) => {
-    console.log(req.body);
-    console.log(req.file);
+    // console.log(req.body);
+    // console.log(req.file);
     const sql = "DELETE FROM userphotos WHERE username = ? AND id = ?";
     const query = db.query(sql, [req.params.username, req.query.id], (error, result) => {
         if(error) {
@@ -343,6 +343,55 @@ app.get("/sport", async (req, res) => {
         }
         // console.log(teamsBeaten);
         res.send(JSON.stringify(teamsBeaten));
+    });
+})
+
+app.get("/sport/team/:username", async (req, res) => {
+    console.log(req.params);
+    const sqlGetPhotos = "SELECT team FROM userpreferences WHERE username = ?"
+    db.query(sqlGetPhotos, [req.params.username], (error, result) => {
+        if(error) {
+            console.log(error); 
+            return;
+        };
+        if(result.length > 0) res.status(200).send(result[0].team);
+        else res.status(400).send("");
+    });
+})
+
+app.put("/sport/team/:username", async (req, res) => {
+    const sqlGetPhotos = "SELECT team FROM userpreferences WHERE username = ?"
+    db.query(sqlGetPhotos, [req.params.username], (error, result) => {
+        if(error) {
+            console.log(error); 
+            return;
+        };
+        if(result.length > 0) {
+            // update
+            const sql = "UPDATE userpreferences SET team = ? WHERE username = ?";
+            const query = db.query(sql, [req.body.team, req.params.username], (error, result) => {
+                if(error) {
+                    console.log(error); 
+                    res.status(400).send("Error when updating last team");
+                    return;
+                };
+                res.status(200).send("Last team updated");
+                console.log(result);
+            })
+        }
+        else {
+            // post
+            const sql = "INSERT INTO userpreferences VALUES (?,?)";
+            const query = db.query(sql, [req.params.username, req.body.team], (error, result) => {
+                if(error) {
+                    console.log(error);
+                    res.status(400).send("Error when adding last team");
+                    return;
+                };
+                res.status(200).send("Last team added");
+                console.log(result);
+            })
+        }
     });
 })
 
@@ -538,5 +587,5 @@ async function testfunc() {
 }
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
+    console.log(`Server listening on port ${port}`);
 })
