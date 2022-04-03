@@ -90,10 +90,10 @@ app.post("/login", async (req, res) => {
     });
 })
 
-app.get("/photo/:username/:id", async (req, res) => {
+app.get("/photo/:username", async (req, res) => {
     console.log(req.params);
     const sqlGetPhotos = "SELECT photo FROM userphotos WHERE username = ? AND id = ?"
-    db.query(sqlGetPhotos, [req.params.username, req.params.id], (error, result) => {
+    db.query(sqlGetPhotos, [req.params.username, req.query.id], (error, result) => {
         if(error) {
             console.log(error); 
             return;
@@ -116,7 +116,7 @@ app.get("/photos/:username", async (req, res) => {
     console.log("getting photos");
 })
 
-app.post("/photo/:username", upload.single("photo"), async (req, res) => {
+app.post("/photo/:username", upload.single("photo"), (req, res) => {
     console.log(req.body);
     console.log(req.file);
     const sqlCheck = "SELECT username FROM userphotos WHERE username = ?";
@@ -137,6 +137,45 @@ app.post("/photo/:username", upload.single("photo"), async (req, res) => {
             console.log(result);
             res.status(200).send("Photo added");
         })
+    });
+})
+
+app.put("/photo/:username", upload.single("photo"), (req, res) => {
+    console.log(req.body);
+    console.log(req.file);
+    const sql = "UPDATE userphotos SET photo = ? WHERE username = ? AND id = ?";
+    const query = db.query(sql, [req.file, req.params.username, req.query.id], (error, result) => {
+        if(error) {
+            console.log(error);
+            res.status(400).send("Error when updating photo");
+            return;
+        };
+        console.log(result);
+        res.status(200).send("Photo updated");
+    });
+})
+
+app.delete("/photo/:username", (req, res) => {
+    console.log(req.body);
+    console.log(req.file);
+    const sql = "DELETE FROM userphotos WHERE username = ? AND id = ?";
+    const query = db.query(sql, [req.params.username, req.query.id], (error, result) => {
+        if(error) {
+            console.log(error);
+            res.status(400).send("Error when deleting photo");
+            return;
+        };
+        console.log(result);
+        res.status(200).send("Photo deleted");
+        const sqlUpdateIds = "UPDATE userphotos SET id = id - 1 WHERE username = ? AND id > ?";
+        const updateIdsQuery = db.query(sqlUpdateIds, [req.params.username, req.query.id], (error, result) => {
+            if(error) {
+                console.log(error);
+                console.log("Error when updating photo ids");
+                return;
+            };
+            console.log(result);
+        });
     });
 })
 
